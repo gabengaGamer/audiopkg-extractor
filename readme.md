@@ -18,7 +18,7 @@ flags:
     -v, --verbose: print a bunch of information as we're reading the file
 ```
 
-For decompressing pc and gamecube files you need to copy mss32.dll from the game's directory to the
+For decompressing PC files you need to copy mss32.dll from the game's directory to the
 same directory as audiopkg.exe.
 
 For playing back the .vgmstream files you can use foobar2000 or audacious with a recent
