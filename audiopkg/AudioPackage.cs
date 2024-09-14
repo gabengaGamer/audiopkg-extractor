@@ -55,21 +55,38 @@ namespace audiopkg
                     reader.BaseStream.Seek(0xA0, SeekOrigin.Begin);
                     break;
                 case "v1.6":
-                    if (Platform == platform_pc)
+                    if (Platform == platform_pc) //Hobbit PC
                     {
                         reader.BaseStream.Seek(0xA0, SeekOrigin.Begin);
                     }
-                    else if (Platform == platform_xbox) //area 51 xbox demo
+                    else if (Platform == platform_xbox) //Area 51 Xbox prototype
                     {
                         reader.BaseStream.Seek(0xB0, SeekOrigin.Begin);
                     }
                     else
                     {
-                        Console.Error.WriteLine($"Unknown version {Version} for platfor {Platform}");
+                        Console.Error.WriteLine($"Unknown version {Version} for platform {Platform}");
                     }
                     break;
                 case "v1.7":
-                    reader.BaseStream.Seek(0xC0, SeekOrigin.Begin);
+                    if (Platform == platform_xbox) //Area 51 Xbox (retail and demo)
+                    {
+                        reader.BaseStream.Seek(0xC0, SeekOrigin.Begin);
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"Unknown version {Version} for platform {Platform}");
+                    }
+                    break;
+                case "v1.8":
+                    if (Platform == platform_pc) //Area 51 PC
+                    {
+                        reader.BaseStream.Seek(0xC0, SeekOrigin.Begin);
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"Unknown version {Version} for platform {Platform}");
+                    }
                     break;
                 default:
                     Console.Error.WriteLine($"Unknown version {Version}");
@@ -111,7 +128,11 @@ namespace audiopkg
 
             if ((Version == "v1.7" || Version == "v1.6") && Platform == platform_xbox)
             {
-                reader.BaseStream.Seek(4, SeekOrigin.Current); //some unknown bytes on area 51 xbox.
+                reader.BaseStream.Seek(4, SeekOrigin.Current); //some unknown bytes on Area 51 Xbox (retail, demo and proto).
+            }
+            else if (Version == "v1.8" && Platform == platform_pc)
+            {
+                reader.BaseStream.Seek(4, SeekOrigin.Current); //some unknown bytes on Area 51 PC.
             }
 
             args.WriteVerbose($"header counts: {nSampleHeaders[0]} {nSampleHeaders[1]} {nSampleHeaders[2]}");
@@ -252,6 +273,12 @@ namespace audiopkg
                         index_type.COLD_INDEX => sampleHeaderIndices[COLD],
                         _ => throw new InvalidOperationException($"Unsupported index type {element.IndexType}"),
                     };
+                    
+                    if (indices == null) //Version 1.8 sometimes gives errors, so I added this check.
+                    {
+                        Console.Error.WriteLine($"Warning: indices array is null for index type {element.IndexType}.");
+                        continue;
+                    }
 
                     var headers = element.IndexType switch
                     {
@@ -446,14 +473,14 @@ namespace audiopkg
 
         byte[] ReadPC(Stream file, SampleHeader header, int nChannels, int leftRight)
         {
-            if (nChannels == 1)
+            if (nChannels == 1 || Version == "v1.8") //Ну его нахуй.
             {
                 return ReadPlain(file, header);
             }
 
             return ReadStereoHalfPc(file, header, leftRight);
         }
-
+        
         byte[] ReadStereoHalfPc(Stream file, SampleHeader header, int leftRight)
         {
             const int BufferSize = 36 * 1024;
